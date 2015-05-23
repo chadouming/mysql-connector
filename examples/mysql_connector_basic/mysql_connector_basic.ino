@@ -1,8 +1,6 @@
-#include <SPI.h>
-#include <Ethernet.h>
-#include <sha1.h>
-#include <avr/pgmspace.h>
-//#include <avr/dtostrf.h>  // Add this for the Due
+#include <ESP8266WiFi.h>
+#include "Hash.h"
+#include <pgmspace.h>
 #include <stdlib.h>
 #include <mysql.h>
 
