@@ -4,9 +4,9 @@
  * This code module demonstrates how to create a simple database-enabled
  * sketch.
  */
-#include <SPI.h>
-#include <Ethernet.h>
-#include <sha1.h>
+#include <ESP8266WiFi.h>
+#include "Hash.h"
+#include <pgmspace.h>
 #include <mysql.h>
 
 /* Setup for Ethernet Library */
