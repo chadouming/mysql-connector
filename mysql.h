@@ -43,15 +43,13 @@
 
 #define WITH_DEBUG   // Uncomment this for enabling debugging of messages
 
-#define WIFI         // Uncomment this for use with the WiFi shield
-
 #define OK_PACKET     0x00
 #define EOF_PACKET    0xfe
 #define ERROR_PACKET  0xff
 #define MAX_FIELDS    0x20   // Maximum number of fields. Reduce to save memory. Default=32
 #define VERSION_STR   "1.0.3rc"
 
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
 
 // Structure for retrieving a field (minimal implementation).
 typedef struct {
@@ -103,13 +101,13 @@ class Connector
 {
   public:
     Connector();
-    boolean mysql_connect(char *server, int port,
+    bool mysql_connect(const char *server, int port,
                           char *user, char *password);
     void disconnect();
-    boolean cmd_query(const char *query);
+    bool cmd_query(const char *query);
     int is_connected () { return client.connected(); }
     const char *version() { return VERSION_STR; }
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
     column_names *get_columns();
     row_values *get_next_row();
     void free_columns_buffer();
@@ -122,9 +120,9 @@ class Connector
     char *server_version;
     byte seed[20];
     int packet_len;
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
     column_names columns;
-    boolean columns_read;
+    bool columns_read;
     int num_cols;
     row_values row;
 #endif
@@ -138,24 +136,24 @@ class Connector
     void parse_handshake_packet();
     int check_ok_packet();
     void parse_error_packet();
-    boolean run_query(int query_len);
+    bool run_query(int query_len);
 
     // Utility methods
-    boolean scramble_password(char *password, byte *pwd_hash);
+    bool scramble_password(char *password, byte *pwd_hash);
     int get_lcb_len(int offset);
     int read_int(int offset, int size=0);
     void store_int(byte *buff, long value, int size);
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
     char *read_string(int *offset);
     int get_field(field_struct *fs);
     int get_row();
-    boolean get_fields();
-    boolean get_row_values();
+    bool get_fields();
+    bool get_row_values();
     column_names *query_result();
 #endif
 
     // diagnostic methods
-#if defined WITH_DEBUG
+#ifdef WITH_DEBUG
     void print_packet();
 #endif
 

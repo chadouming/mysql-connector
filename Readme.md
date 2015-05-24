@@ -61,20 +61,6 @@ As you can imagine, there are some limitations.
 - Server error responses are processed immediately with the error code and text
   written via Serial.print.
 
-
-Getting Started - Quick with Single File Download
--------------------------------------------------
-The Connector/Arduino 1.0.0b has been uploaded to Lauchpad and can be
-downloaded as a single file. To install it, simply download the file,
-uncompress it, then copy the mysql_connector and sha1 folders to your
-Libraries folder for your Arduino IDE. Typically, this is in your documents
-folder under Arduino/Libraries but consult the Arduino documentation for
-your specific platform.
-
-Note: if you copy the folders while the IDE is open, you will have to
-restart it to use the new library.
-
-
 Documentation
 -------------
 The documentation for the connector library is a work in progress. In the
@@ -82,11 +68,9 @@ meantime, I have written a couple of blogs about the connector that explain
 how to use it. Please refer to the blogs until such time there is sufficient
 documentation available.
 
-
 Dependencies
 ------------------------
 
 #include <ESP8266WiFi.h>
-#include <pgmspace.h>
-#include "mysql.h"
-#include "Hash.h"
+#include <Hash.h>
+#include <mysql.h>

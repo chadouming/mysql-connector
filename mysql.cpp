@@ -27,10 +27,9 @@
   Version 1.0.3rc Updated by Dr. Charles A. Bell, March 2015.
 */
 #include "mysql.h"
-#include "Hash.h"
-#include <pgmspace.h>
+#include <Hash.h>
 
-#define MAX_CONNECT_ATTEMPTS 	5
+#define MAX_CONNECT_ATTEMPTS 	10
 #define MAX_TIMEOUT          	10
 #define MIN_BYTES_NETWORK    	8
 
@@ -47,7 +46,7 @@
 
 Connector::Connector() {
   buffer = NULL;
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
   columns.num_fields = 0;
   for (int f = 0; f < MAX_FIELDS; f++) {
     columns.fields[f] = NULL;
@@ -71,26 +70,22 @@ Connector::Connector() {
  * user[in]        user name
  * password[in]    (optional) user password
  *
- * Returns boolean - True = connection succeeded
+ * Returns bool - True = connection succeeded
 */
-boolean Connector::mysql_connect(char *server, int port,
+bool Connector::mysql_connect(const char *server, const int port,
                                  char *user, char *password)
 {
-  boolean connected = false;
-  int i = -1;
-
-  // Retry up to MAX_CONNECT_ATTEMPTS times 1 second apart.
+  bool connected = false;
+  int i = 0;
+  
   do {
-    delay(1000);
-    if(!client.connect(server, port))
-	{
-		Serial.println("Shit!");
-		i++;
-	}
-	else
-		connected = true;
-  } while (i < MAX_CONNECT_ATTEMPTS && !connected);
-
+	connected = client.connect(server, port);
+	if(!connected)
+		Serial.println("Failed :(");
+	delay(1000);
+	i++;
+  }while(!connected && i <= MAX_CONNECT_ATTEMPTS);
+  
   if (connected) {
     read_packet();
     parse_handshake_packet();
@@ -119,10 +114,8 @@ void Connector::disconnect()
 {
   if (is_connected())
   {
-    while(client.available()){
-		String line = client.readStringUntil('\r');
-		Serial.print(line);
-	}
+	client.stop();
+	client.flush();
     print_message(DISCONNECTED, true);
   }
 }
@@ -140,9 +133,9 @@ void Connector::disconnect()
  *
  * query[in]       SQL statement (using normal memory access)
  *
- * Returns boolean - True = a result set is available for reading
+ * Returns bool - True = a result set is available for reading
 */
-boolean Connector::cmd_query(const char *query)
+bool Connector::cmd_query(const char *query)
 {
   int query_len = (int)strlen(query);
 
@@ -158,40 +151,7 @@ boolean Connector::cmd_query(const char *query)
   return run_query(query_len);
 }
 
-
-/**
- * cmd_query_P - Execute a SQL statement
- *
- * This method executes the query specified as a character array that is
- * located in program memory. It copies the query to the local buffer then
- * calls the run_query() method to execute the query.
- *
- * If a result set is available after the query executes, the field
- * packets and rows can be read separately using the get_field() and
- * get_row() methods.
- *
- * query[in]       SQL statement (using PROGMEM)
- *
- * Returns boolean - True = a result set is available for reading
-
-boolean Connector::cmd_query_P(const char *query)
-{
-  int query_len = (int)strlen_P(query);
-
-  if (buffer != NULL)
-    free(buffer);
-
-  buffer = (byte *)malloc(query_len+5);
-
-  // Write query to packet
-  for (int c = 0; c < query_len; c++)
-    buffer[c+5] = pgm_read_byte_near(query+c);
-
-  // Send the query
-  return run_query(query_len);
-}
-*/
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
 
 /**
  * show_results - Show a result set from the server via Serial.print
@@ -314,7 +274,7 @@ void Connector::free_columns_buffer() {
     columns.fields[f] = NULL;
   }
   num_cols = 0;
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
   columns_read = false;
 #endif
 }
@@ -379,10 +339,10 @@ column_names *Connector::get_columns() {
  *
  * query_len[in]   Number of bytes in the query string
  *
- * Returns boolean - true = result set available,
+ * Returns bool - true = result set available,
  *                   false = no result set returned.
 */
-boolean Connector::run_query(int query_len)
+bool Connector::run_query(int query_len)
 {
   store_int(&buffer[0], query_len+1, 3);
   // TODO: Abort if query larger than sizeof(buffer);
@@ -390,9 +350,8 @@ boolean Connector::run_query(int query_len)
   buffer[4] = byte(0x03);  // command packet
 
   // Send the query
-  for (int c = 0; c < query_len+5; c++)
-    client.write(buffer[c]);
-
+  client.write((byte*)buffer, query_len+5);
+  
   // Read a response packet and check it for Ok or Error.
   read_packet();
   int res = check_ok_packet();
@@ -403,7 +362,7 @@ boolean Connector::run_query(int query_len)
     return false;
   }
   // Not an Ok packet, so we now have the result set to process.
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
   columns_read = false;
 #endif
   return true;
@@ -431,7 +390,7 @@ int Connector::wait_for_client() {
     num = client.available();
     timeout++;
     if (num < MIN_BYTES_NETWORK and timeout < MAX_TIMEOUT) {
-      delay(100);  // adjust for network latency
+      delay(10);  // adjust for network latency
     }
   } while (num < MIN_BYTES_NETWORK and timeout < MAX_TIMEOUT);
   return num;
@@ -526,8 +485,7 @@ void Connector::send_authentication_packet(char *user, char *password)
   buffer[3] = byte(0x01);
 
   // Write the packet
-  for (int i = 0; i < size_send; i++)
-    client.write(buffer[i]);
+  client.write((byte*)buffer, size_send);
 }
 
 
@@ -544,7 +502,7 @@ void Connector::send_authentication_packet(char *user, char *password)
  *
  * Returns boolean - True = scramble succeeded
 */
-boolean Connector::scramble_password(char *password, byte *pwd_hash) {
+bool Connector::scramble_password(char *password, byte *pwd_hash) {
   byte *digest;
   byte hash1[20];
   byte hash2[20];
@@ -594,10 +552,8 @@ void Connector::read_packet() {
   if (buffer != NULL)
     free(buffer);
 
-#if not defined WIFI
   // Wait for client (the server) to send data
   wait_for_client();
-#endif
 
   int avail_bytes = wait_for_client();
   while (avail_bytes < 4) {
@@ -606,9 +562,7 @@ void Connector::read_packet() {
 
   // Read packet header
   for (int i = 0; i < 4; i++) {
-#if defined WIFI
     while (!client.available());
-#endif
     local[i] = client.read();
   }
 
@@ -616,13 +570,7 @@ void Connector::read_packet() {
   packet_len = local[0];
   packet_len += (local[1] << 8);
   packet_len += ((uint32_t)local[2] << 16);
-#if not defined WIFI
-  // We must wait for slow arriving packets for Ethernet shields only.
-  avail_bytes = wait_for_client();
-  while (avail_bytes < packet_len) {
-    avail_bytes = wait_for_client();
-  }
-#endif
+
   // Check for valid packet.
   if (packet_len < 0) {
     print_message(PACKET_ERROR, true);
@@ -637,9 +585,7 @@ void Connector::read_packet() {
     buffer[i] = local[i];
 
   for (int i = 4; i < packet_len+4; i++) {
-#if defined WIFI
     while (!client.available());
-#endif
     buffer[i] = client.read();
   }
 }
@@ -769,7 +715,7 @@ int Connector::get_lcb_len(int offset) {
 }
 
 
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
 
 /**
  * read_string - Retrieve a string from the buffer
@@ -853,7 +799,7 @@ void Connector::store_int(byte *buff, long value, int size) {
 }
 
 
-#if defined WITH_DEBUG
+#ifdef WITH_DEBUG
 
 /**
  * print_packet - Print the contents of a packet via Serial.print
@@ -884,7 +830,7 @@ void Connector::print_packet() {
 
 #endif
 
-#if defined WITH_SELECT
+#ifdef WITH_SELECT
 
 /**
  * get_field - Read a field from the server
@@ -972,7 +918,7 @@ int Connector::get_row() {
  * in the class.
  *
 */
-boolean Connector::get_fields()
+bool Connector::get_fields()
 {
   int num_fields = 0;
   int res = 0;
@@ -1005,7 +951,7 @@ boolean Connector::get_fields()
  * in the class.
  *
 */
-boolean Connector::get_row_values() {
+bool Connector::get_row_values() {
   int res = 0;
   int offset = 0;
 

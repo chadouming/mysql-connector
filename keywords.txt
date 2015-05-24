@@ -1,7 +1,6 @@
 Connector     KEYWORD1
 cmd_query     KEYWORD2
 mysql_connect KEYWORD3
-cmd_query_P   KEYWORD4
 show_results  KEYWORD5
 get_field     KEYWORD6
 get_row       KEYWORD7

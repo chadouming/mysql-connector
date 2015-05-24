@@ -58,18 +58,17 @@
       or change the table to automatically convert to Fahrenheit thereby
       moving processing from the Arduino to the database - cool!
 */
-#include <SPI.h>
-#include <Ethernet.h>
-#include <sha1.h>
-#include <avr/pgmspace.h>
-#include "mysql.h"
+#include <ESP8266WiFi.h>
+#include <Hash.h>
+#include <mysql.h>
 #include <DHT22.h>
 
-byte mac_addr[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-IPAddress ip_addr(192, 168, 0, 15);
-IPAddress server_addr(192, 168, 0, 7); 
+char *server_addr = "0.0.0.0"; 
 char user[] = "root";
 char password[] = "root";
+
+const char* SSID = "network ssid";         // Your network SSID
+const char* PASS = "network pass";         // Your network Password
 
 Connector my_conn;        // The Connector/Arduino reference
 
@@ -122,14 +121,25 @@ void read_data() {
 }
 
 void setup() {  
-  Ethernet.begin(mac_addr);
+  
   Serial.begin(115200);
-  delay(1000);
-  Serial.println("Connecting...");
+  
+  // Set WiFi to station ap mode and connect to wifi.
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.begin(SSID, PASS);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(300);
+    Serial.print(".");
+  }
+  
+  Serial.println("Connected to Wifi. Connecting to database . . .");
+  
   if (my_conn.mysql_connect(server_addr, 3306, user, password))
     delay(500);
   else
     Serial.println("Connection failed.");
+	
 }
 
 void loop() {  
