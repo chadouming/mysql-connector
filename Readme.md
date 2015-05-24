@@ -71,6 +71,8 @@ documentation available.
 Dependencies
 ------------------------
 
-include <ESP8266WiFi.h>
-include <Hash.h>
-include <mysql.h>
+include "ESP8266WiFi.h"
+
+include "Hash.h"
+
+include "mysql.h"
