@@ -1,10 +1,22 @@
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
 Connector     KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
 cmd_query     KEYWORD2
-mysql_connect KEYWORD3
-show_results  KEYWORD5
-get_field     KEYWORD6
-get_row       KEYWORD7
-is_connected  KEYWORD8
-ok_packet     KEYWORD9
-eof_packet    KEYWORD10
-field_struct  KEYWORD11
+mysql_connect KEYWORD2
+show_results  KEYWORD2
+get_field     KEYWORD2
+get_row       KEYWORD2
+is_connected  KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+ok_packet     LITERAL1
+eof_packet    LITERAL1
