@@ -72,16 +72,17 @@ Connector::Connector() {
  *
  * Returns bool - True = connection succeeded
 */
-bool Connector::mysql_connect(const char *server, const int port,
-                                 char *user, char *password)
+bool Connector::mysql_connect(const char *server, uint16_t port, char *user, char *password)
 {
   bool connected = false;
   int i = 0;
   
   do {
 	connected = client.connect(server, port);
-	if(!connected)
-		Serial.println("Failed :(");
+	#ifdef DEBUG
+		if(!connected)
+			Serial.println("Failed :(");
+	#endif
 	delay(1000);
 	i++;
   }while(!connected && i <= MAX_CONNECT_ATTEMPTS);
@@ -95,14 +96,49 @@ bool Connector::mysql_connect(const char *server, const int port,
       parse_error_packet();
       return false;
     }
-    print_message(CONNECTED);
-    Serial.println(server_version);
+	#ifdef DEBUG
+		print_message(CONNECTED);
+		Serial.println(server_version);
+	#endif
     free(server_version); // don't need it anymore
     return true;
   }
   return false;
 }
 
+bool Connector::mysql_connect(IPAddress server, uint16_t port, char *user, char *password)
+{
+  bool connected = false;
+  int i = 0;
+  
+  do {
+	connected = client.connect(server, port);
+	#ifdef DEBUG
+		if(!connected)
+			Serial.println("Failed :(");
+	#endif
+	delay(1000);
+	i++;
+  }while(!connected && i <= MAX_CONNECT_ATTEMPTS);
+  
+  if (connected) {
+    read_packet();
+    parse_handshake_packet();
+    send_authentication_packet(user, password);
+    read_packet();
+    if (check_ok_packet() != 0) {
+      parse_error_packet();
+      return false;
+    }
+	#ifdef DEBUG
+		print_message(CONNECTED);
+		Serial.println(server_version);
+	#endif
+    free(server_version); // don't need it anymore
+    return true;
+  }
+  return false;
+}
 
 /**
  * Disconnect from the server.
@@ -116,7 +152,9 @@ void Connector::disconnect()
   {
 	client.stop();
 	client.flush();
-    print_message(DISCONNECTED, true);
+	#ifdef DEBUG
+		print_message(DISCONNECTED, true);
+	#endif
   }
 }
 
@@ -573,12 +611,16 @@ void Connector::read_packet() {
 
   // Check for valid packet.
   if (packet_len < 0) {
-    print_message(PACKET_ERROR, true);
+	#ifdef DEBUG
+		print_message(PACKET_ERROR, true);
+	#endif
     packet_len = 0;
   }
   buffer = (byte *)malloc(packet_len+4);
   if (buffer == NULL) {
-    print_message(MEMORY_ERROR, true);
+	#ifdef DEBUG
+		print_message(MEMORY_ERROR, true);
+	#endif
     return;
   }
   for (int i = 0; i < 4; i++)
@@ -655,14 +697,15 @@ void Connector::parse_handshake_packet() {
  * n                           message
 */
 void Connector::parse_error_packet() {
-  Serial.print("Error: ");
-  Serial.print(read_int(5, 2));
-  Serial.print(" = ");
-  for (int i = 0; i < packet_len-9; i++)
-    Serial.print((char)buffer[i+13]);
-  Serial.println(".");
+	#ifdef DEBUG
+	  Serial.print("Error: ");
+	  Serial.print(read_int(5, 2));
+	  Serial.print(" = ");
+	  for (int i = 0; i < packet_len-9; i++)
+		Serial.print((char)buffer[i+13]);
+	  Serial.println(".");
+	#endif
 }
-
 
 /**
  * check_ok_packet - Decipher an Ok packet from the server.
@@ -799,7 +842,7 @@ void Connector::store_int(byte *buff, long value, int size) {
 }
 
 
-#ifdef WITH_DEBUG
+#ifdef DEBUG
 
 /**
  * print_packet - Print the contents of a packet via Serial.print
@@ -933,7 +976,9 @@ bool Connector::get_fields()
     field_struct *field = (field_struct *)malloc(sizeof(field_struct));
     res = get_field(field);
     if (res == EOF_PACKET) {
-      print_message(BAD_MOJO, true);
+		#ifdef DEBUG
+			print_message(BAD_MOJO, true);
+		#endif
       return false;
     }
     columns.fields[f] = field;

@@ -38,10 +38,9 @@
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 
-//#define WITH_SELECT  // Uncomment this for use without SELECT capability
-                       // to save space.
+//#define WITH_SELECT  // Comment this for use without SELECT capability
 
-#define WITH_DEBUG   // Uncomment this for enabling debugging of messages
+//#define DEBUG   // Uncomment this for enabling debugging of messages
 
 #define OK_PACKET     0x00
 #define EOF_PACKET    0xfe
@@ -101,8 +100,8 @@ class Connector
 {
   public:
     Connector();
-    bool mysql_connect(const char *server, int port,
-                          char *user, char *password);
+    bool mysql_connect(const char *server, uint16_t port, char *user, char *password);
+	bool mysql_connect(IPAddress server, uint16_t port, char *user, char *password);
     void disconnect();
     bool cmd_query(const char *query);
     int is_connected () { return client.connected(); }
