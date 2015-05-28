@@ -76,6 +76,7 @@ class Connector
 	bool mysql_connect(IPAddress server, uint16_t port, char *user, char *password);
     void disconnect();
     bool cmd_query(const char *query);
+	bool cmd_query_P(const char *query);
     int is_connected () { return client.connected(); }
     const char *version() { return VERSION_STR; }
 #ifdef WITH_SELECT

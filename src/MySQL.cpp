@@ -166,6 +166,34 @@ bool Connector::cmd_query(const char *query)
   return run_query(query_len);
 }
 
+/**
+ * cmd_query_P - Execute a SQL statement
+ *
+ * This method executes the query specified as a character array that is
+ * located in program memory. It copies the query to the local buffer then
+ * calls the run_query() method to execute the query.
+ *
+ * If a result set is available after the query executes, the field
+ * packets and rows can be read separately using the get_field() and
+ * get_row() methods.
+ *
+ * query[in]       SQL statement (using PROGMEM)
+ *
+ * Returns boolean - True = a result set is available for reading
+ */
+bool Connector::cmd_query_P(const char *query)
+{
+  int query_len = (int)strlen_P(query);
+  if (buffer != NULL)
+    free(buffer);
+  buffer = (byte *)malloc(query_len+5);
+  // Write query to packet
+  for (int c = 0; c < query_len; c++)
+    buffer[c+5] = pgm_read_byte_near(query+c);
+  // Send the query
+  return run_query(query_len);
+}
+
 #ifdef WITH_SELECT
 
 /**
