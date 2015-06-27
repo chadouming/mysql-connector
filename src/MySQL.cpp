@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2012, 2015 Oracle and/or its affiliates. All rights reserved.
  */
-#include "mysql.h"
+#include "MySQL.h"
 #include <Hash.h>
 
 #define MAX_CONNECT_ATTEMPTS 	10
